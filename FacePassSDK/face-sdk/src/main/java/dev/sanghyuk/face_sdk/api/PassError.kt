@@ -1,4 +1,4 @@
-package dev.sanghyuk.face_sdk
+package dev.sanghyuk.face_sdk.api
 
 
 /**
