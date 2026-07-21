@@ -2,6 +2,8 @@ package dev.sanghyuk.face_sdk.api
 
 import androidx.camera.core.ImageAnalysis
 import androidx.camera.core.ImageProxy
+import com.google.mlkit.vision.face.Face
+import dev.sanghyuk.face_sdk.detection.FaceDetectorSource
 
 
 /**
@@ -28,18 +30,45 @@ class FaceAuthAnalyzer(
     private val callback: FaceAuthCallback
 ) : ImageAnalysis.Analyzer {
 
+    private val detectorSource = FaceDetectorSource()
+    private var finished = false
+
     override fun analyze(image: ImageProxy) {
-        // TODO(2단계): MLKit 검출 파이프라인 연결
-        // TODO(3단계): 라이브니스 상태 머신 연결
-        // TODO(4단계): 마스크 분류 연결
-        image.close()  // 이거 안 하면 다음 프레임이 안 들어옴 — 뼈대에서도 필수
+
+        if (finished) { image.close(); return}
+
+        detectorSource.detect(
+            imageProxy = image,
+            onResult = { faces -> handleFaces(faces)},
+            onFailure = { error -> fail(PassError.Unknown(error))},
+            onComplete = { image.close() }
+        )
+
     }
 
-    /**
-     * 인증 상태를 초기화하고 새 인증 세션을 시작할 수 있게 합니다.
-     * 진행 중이던 판별은 폐기됩니다.
-     */
+    private fun handleFaces(faces: List<Face>) {
+        when {
+            faces.isEmpty() -> callback.onProgress(AuthProgress.SEARCHING)
+            faces.size >= 2 -> fail(PassError.MultipleFaces)
+            else -> {
+                val face = faces.first()
+                android.util.Log.d(
+                    "FacePass",
+                    "angleY=${face.headEulerAngleY}, box=${face.boundingBox}"
+                )
+                callback.onProgress(AuthProgress.ALIGNING)
+            }
+        }
+    }
+
+    private fun fail(error: PassError) {
+        if (finished) return
+        finished = true
+        callback.onError(error)
+    }
+
+
     fun reset() {
-        // TODO(3단계): 상태 머신 초기화
+        finished = false
     }
 }
