@@ -4,6 +4,7 @@ import androidx.camera.core.ImageAnalysis
 import androidx.camera.core.ImageProxy
 import com.google.mlkit.vision.face.Face
 import dev.sanghyuk.face_sdk.detection.FaceDetectorSource
+import dev.sanghyuk.face_sdk.liveness.LivenessStateMachine
 
 
 /**
@@ -33,6 +34,9 @@ class FaceAuthAnalyzer(
     private val detectorSource = FaceDetectorSource()
     private var finished = false
 
+    private val stateMachine = LivenessStateMachine(config)
+    private var lastProgress: AuthProgress? = null
+
     override fun analyze(image: ImageProxy) {
 
         if (finished) { image.close(); return}
@@ -48,17 +52,42 @@ class FaceAuthAnalyzer(
 
     private fun handleFaces(faces: List<Face>) {
         when {
-            faces.isEmpty() -> callback.onProgress(AuthProgress.SEARCHING)
+            faces.isEmpty() ->{
+                stateMachine.reset()
+                emitProgress(AuthProgress.SEARCHING)
+            }
             faces.size >= 2 -> fail(PassError.MultipleFaces)
             else -> {
                 val face = faces.first()
-                android.util.Log.d(
-                    "FacePass",
-                    "angleY=${face.headEulerAngleY}, box=${face.boundingBox}"
-                )
-                callback.onProgress(AuthProgress.ALIGNING)
+                val newState = stateMachine.update(face.headEulerAngleY)
+
+                when(newState){
+                    LivenessStateMachine.State.NEUTRAL -> {
+                        emitProgress(AuthProgress.AWAITING_ACTION)
+                    }
+                    LivenessStateMachine.State.ROTATING -> {
+                        emitProgress(AuthProgress.ACTION_IN_PROGRESS)
+                    }
+                    LivenessStateMachine.State.RETURNED -> {
+                        succeed(face)
+                    }
+                }
+
             }
         }
+    }
+
+    private fun emitProgress (state: AuthProgress) {
+        if (lastProgress == state) return
+        lastProgress = state
+        callback.onProgress(state)
+    }
+
+    private fun succeed(face: com.google.mlkit.vision.face.Face) {
+        if (finished) return
+        finished = true
+        // TODO(STEP04): boundingBox로 crop한 Bitmap 반환
+        // 지금은 자리만 — crop 유틸은 다음 작업에서
     }
 
     private fun fail(error: PassError) {
