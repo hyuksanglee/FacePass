@@ -4,6 +4,8 @@ import androidx.camera.core.ImageAnalysis
 import androidx.camera.core.ImageProxy
 import com.google.mlkit.vision.face.Face
 import dev.sanghyuk.face_sdk.detection.FaceDetectorSource
+import dev.sanghyuk.face_sdk.internal.FaceCropper
+import dev.sanghyuk.face_sdk.internal.rotate
 import dev.sanghyuk.face_sdk.liveness.LivenessStateMachine
 
 
@@ -43,14 +45,14 @@ class FaceAuthAnalyzer(
 
         detectorSource.detect(
             imageProxy = image,
-            onResult = { faces -> handleFaces(faces)},
+            onResult = { faces -> handleFaces(faces, image)},
             onFailure = { error -> fail(PassError.Unknown(error))},
             onComplete = { image.close() }
         )
 
     }
 
-    private fun handleFaces(faces: List<Face>) {
+    private fun handleFaces(faces: List<Face>, image: ImageProxy) {
         when {
             faces.isEmpty() ->{
                 stateMachine.reset()
@@ -69,7 +71,7 @@ class FaceAuthAnalyzer(
                         emitProgress(AuthProgress.ACTION_IN_PROGRESS)
                     }
                     LivenessStateMachine.State.RETURNED -> {
-                        succeed(face)
+                        succeed(face, image)
                     }
                 }
 
@@ -83,11 +85,18 @@ class FaceAuthAnalyzer(
         callback.onProgress(state)
     }
 
-    private fun succeed(face: com.google.mlkit.vision.face.Face) {
+    private fun succeed(face: Face, image: ImageProxy) {
         if (finished) return
         finished = true
-        // TODO(STEP04): boundingBox로 crop한 Bitmap 반환
-        // 지금은 자리만 — crop 유틸은 다음 작업에서
+
+        val bitmap = image.toBitmap().rotate(image.imageInfo.rotationDegrees)
+        val cropped = FaceCropper.crop(bitmap, face.boundingBox)
+
+        if (cropped != null) {
+            callback.onSuccess(cropped)
+        } else {
+            finished = false
+        }
     }
 
     private fun fail(error: PassError) {
