@@ -1,4 +1,12 @@
 <?xml version="1.0" encoding="utf-8"?>
 <manifest xmlns:android="http://schemas.android.com/apk/res/android">
 
+    <application>
+        <activity
+            android:name=".FaceAuthActivity"
+            android:exported="false"
+            android:label="@string/title_activity_face_auth"
+            android:theme="@style/Theme.FacePassSDK" />
+    </application>
+
 </manifest>
