@@ -28,11 +28,8 @@ internal fun FaceAuthScreen(
     state: AuthUiState,
     modifier: Modifier = Modifier,
     cameraContent: @Composable () -> Unit = {}
-){
-    Box(modifier = Modifier.fillMaxSize()){
-        cameraContent()
-    }
-
+) {
+    // 원 밖 전체를 불투명하게 채우는 배경 (사각형 카메라 흔적 제거)
     Box(
         modifier = Modifier
             .fillMaxSize()
@@ -42,7 +39,7 @@ internal fun FaceAuthScreen(
     Column(
         modifier = Modifier
             .fillMaxSize()
-            .padding(top = 60.dp, bottom = 20.dp),
+            .padding(top = 100.dp, bottom = 20.dp),
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
         Text(
@@ -59,19 +56,24 @@ internal fun FaceAuthScreen(
             fontSize = 15.sp,
             fontWeight = FontWeight.Medium
         )
+
         Spacer(Modifier.height(40.dp))
 
         Box(contentAlignment = Alignment.Center) {
+
+            val cameraSize = 300.dp
+            val ringSize = cameraSize + 28.dp
             Box(
                 modifier = Modifier
-                    .size(172.dp)
+                    .size(cameraSize)
                     .clip(CircleShape)
             ) {
                 cameraContent()
             }
             ProgressRing(
                 progress = state.progress,
-                color = state.ringColor
+                color = state.ringColor,
+                size = ringSize
             )
         }
 
@@ -108,7 +110,7 @@ internal fun FaceAuthScreen(
     }
 }
 
-// ── 미리보기: 5개 상태 각각 확인 ──
+// ── 미리보기: 상태별 확인 ──
 @Preview(name = "1. 얼굴 찾는 중", showBackground = true, backgroundColor = 0xFF2A3040)
 @Composable
 private fun PreviewSearching() {

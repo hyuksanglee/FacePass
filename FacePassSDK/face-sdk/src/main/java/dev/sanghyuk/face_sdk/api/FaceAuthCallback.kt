@@ -1,7 +1,7 @@
 package dev.sanghyuk.face_sdk.api
 
 data class FaceAuthConfig(
-    val triggerAngleDegrees: Float = 20f,
+    val triggerAngleDegrees: Float = 25f,
     val neutralAngleDegrees: Float = 10f,
     val actionTimeoutMillis: Long = 15_000L,
     val maskConfidenceThreshold: Float = 0.7f

@@ -16,6 +16,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.StrokeCap
 import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.tooling.preview.Preview
+import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 
 @Composable
@@ -23,8 +24,9 @@ internal fun ProgressRing(
     progress: Float,
     color: Color,
     modifier: Modifier = Modifier,
+    size: Dp = 200.dp,
     strokeWidth: Float = 8f
-    ){
+) {
     val animatedProgress by animateFloatAsState(
         targetValue = progress,
         animationSpec = tween(durationMillis = 600),
@@ -37,13 +39,13 @@ internal fun ProgressRing(
         label = "ringColor"
     )
 
-    Canvas(modifier = modifier.size(200.dp)) {
+    Canvas(modifier = modifier.size(size)) {
         val stroke = Stroke(width = strokeWidth, cap = StrokeCap.Round)
         val inset = strokeWidth / 2
         val arcSize = Size(
-            size.width - strokeWidth,
-            size.height - strokeWidth
-            )
+            size.toPx() - strokeWidth,
+            size.toPx() - strokeWidth
+        )
         val topLeft = Offset(inset, inset)
 
         drawArc(

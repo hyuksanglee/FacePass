@@ -1,12 +1,19 @@
 package dev.sanghyuk.face_sdk.ui
 
+import android.Manifest
+import android.content.pm.PackageManager
 import android.graphics.Bitmap
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalContext
+import androidx.core.content.ContextCompat
 import dev.sanghyuk.face_sdk.api.AuthProgress
 import dev.sanghyuk.face_sdk.api.FaceAuthAnalyzer
 import dev.sanghyuk.face_sdk.api.FaceAuthCallback
@@ -19,7 +26,29 @@ internal fun FaceAuthContent(
     onSuccess: (Bitmap) -> Unit,
     onFailure: (PassError) -> Unit,
     modifier: Modifier = Modifier
-){
+) {
+    val context = LocalContext.current
+
+    var hasCameraPermission by remember {
+        mutableStateOf(
+            ContextCompat.checkSelfPermission(context, Manifest.permission.CAMERA)
+                    == PackageManager.PERMISSION_GRANTED
+        )
+    }
+
+    val permissionLauncher = rememberLauncherForActivityResult(
+        ActivityResultContracts.RequestPermission()
+    ) { granted ->
+        hasCameraPermission = granted
+        if (!granted) onFailure(PassError.CameraDenied)
+    }
+
+    LaunchedEffect(Unit) {
+        if (!hasCameraPermission) {
+            permissionLauncher.launch(Manifest.permission.CAMERA)
+        }
+    }
+
     var uiState by remember { mutableStateOf(AuthUiState.Searching) }
 
     val analyzer = remember {
@@ -39,7 +68,6 @@ internal fun FaceAuthContent(
                 override fun onProgress(state: AuthProgress) {
                     uiState = state.toUiState()
                 }
-
             }
         )
     }
@@ -47,10 +75,12 @@ internal fun FaceAuthContent(
     FaceAuthScreen(
         state = uiState,
         modifier = modifier,
-        cameraContent = { CameraPreview(analyzer = analyzer) }
+        cameraContent = {
+            if (hasCameraPermission) {
+                CameraPreview(analyzer = analyzer)
+            }
+        }
     )
-
-
 }
 
 private fun AuthProgress.toUiState(): AuthUiState = when (this) {
