@@ -61,8 +61,7 @@ internal fun FaceAuthContent(
                 }
 
                 override fun onError(error: PassError) {
-                    uiState = AuthUiState.fail(error.toMessage())
-                    if (!error.retryable) onFailure(error)
+                    onFailure(error)
                 }
 
                 override fun onProgress(state: AuthProgress) {
