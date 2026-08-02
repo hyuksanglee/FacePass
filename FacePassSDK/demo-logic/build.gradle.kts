@@ -18,6 +18,7 @@ android {
         versionName = "1.0"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
+        missingDimensionStrategy("sdkType", "logic")
     }
 
     buildTypes {
@@ -36,6 +37,15 @@ android {
 }
 
 dependencies {
+
+    implementation(project(":face-sdk"))
+
+    // 카메라 (앱이 프리뷰를 여는 쪽)
+    implementation("androidx.camera:camera-core:1.4.1")
+    implementation("androidx.camera:camera-camera2:1.4.1")
+    implementation("androidx.camera:camera-lifecycle:1.4.1")
+    implementation("androidx.camera:camera-view:1.4.1")
+
     implementation(libs.androidx.core.ktx)
     implementation(libs.androidx.appcompat)
     implementation(libs.material)

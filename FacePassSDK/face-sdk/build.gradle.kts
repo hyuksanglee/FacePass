@@ -35,9 +35,20 @@ android {
     buildFeatures {
         compose = true
     }
+
+    flavorDimensions += "sdkType"
+    productFlavors {
+        create("logic") {
+            dimension = "sdkType"
+        }
+        create("full") {
+            dimension = "sdkType"
+        }
+    }
 }
 
 dependencies {
+//    implementation(libs.androidx.compose.remote.creation.compose)
     implementation(libs.androidx.core.ktx)
     implementation(libs.androidx.appcompat)
     implementation(libs.material)
