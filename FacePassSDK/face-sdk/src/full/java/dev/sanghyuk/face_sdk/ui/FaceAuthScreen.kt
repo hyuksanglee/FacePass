@@ -12,6 +12,7 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material3.Button
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
@@ -27,7 +28,8 @@ import androidx.compose.ui.unit.sp
 internal fun FaceAuthScreen(
     state: AuthUiState,
     modifier: Modifier = Modifier,
-    cameraContent: @Composable () -> Unit = {}
+    cameraContent: @Composable () -> Unit = {},
+    onRetry: () -> Unit = {}
 ) {
     // 원 밖 전체를 불투명하게 채우는 배경 (사각형 카메라 흔적 제거)
     Box(
@@ -79,6 +81,7 @@ internal fun FaceAuthScreen(
 
         Spacer(Modifier.height(40.dp))
 
+        // 상태 표시 pill (항상 표시)
         Row(
             modifier = Modifier
                 .clip(RoundedCornerShape(22.dp))
@@ -98,6 +101,14 @@ internal fun FaceAuthScreen(
                 color = Color(0xFFC4CCD8),
                 fontSize = 12.sp
             )
+        }
+
+        // FAIL일 때만 pill 아래에 "다시 시도" 버튼 추가
+        if (state.phase == AuthUiState.Phase.FAIL) {
+            Spacer(Modifier.height(16.dp))
+            Button(onClick = onRetry) {
+                Text("다시 시도")
+            }
         }
 
         Spacer(Modifier.weight(1f))
@@ -133,4 +144,10 @@ private fun PreviewAction() {
 @Composable
 private fun PreviewSuccess() {
     FaceAuthScreen(state = AuthUiState.Success)
+}
+
+@Preview(name = "5. 실패", showBackground = true, backgroundColor = 0xFF2A3040)
+@Composable
+private fun PreviewFail() {
+    FaceAuthScreen(state = AuthUiState.fail("마스크를 벗고 다시 시도해주세요"))
 }

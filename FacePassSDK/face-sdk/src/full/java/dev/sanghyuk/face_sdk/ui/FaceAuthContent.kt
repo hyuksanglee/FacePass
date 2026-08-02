@@ -6,6 +6,7 @@ import android.graphics.Bitmap
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -51,8 +52,12 @@ internal fun FaceAuthContent(
 
     var uiState by remember { mutableStateOf(AuthUiState.Searching) }
 
+    // analyzer를 콜백 안에서 참조하기 위한 홀더 (생성 시점 순환참조 회피)
+    val analyzerRef = remember { arrayOfNulls<FaceAuthAnalyzer>(1) }
+
     val analyzer = remember {
         FaceAuthAnalyzer(
+            context = context,
             config,
             callback = object : FaceAuthCallback {
                 override fun onSuccess(face: Bitmap) {
@@ -61,14 +66,24 @@ internal fun FaceAuthContent(
                 }
 
                 override fun onError(error: PassError) {
-                    onFailure(error)
+                    if (error.retryable) {
+                        // 재시도 가능한 에러 → 화면 유지, FAIL 상태로 전환 (다시 시도 버튼 표시)
+                        uiState = AuthUiState.fail(error.toMessage())
+                    } else {
+                        // 재시도 불가 (권한 등) → 앱에 최종 실패 반환
+                        onFailure(error)
+                    }
                 }
 
                 override fun onProgress(state: AuthProgress) {
                     uiState = state.toUiState()
                 }
             }
-        )
+        ).also { analyzerRef[0] = it }
+    }
+
+    DisposableEffect(Unit) {
+        onDispose { analyzer.close() }
     }
 
     FaceAuthScreen(
@@ -78,6 +93,11 @@ internal fun FaceAuthContent(
             if (hasCameraPermission) {
                 CameraPreview(analyzer = analyzer)
             }
+        },
+        onRetry = {
+            // 다시 시도: analyzer 리셋 + UI를 처음 상태로
+            analyzerRef[0]?.reset()
+            uiState = AuthUiState.Searching
         }
     )
 }
@@ -85,14 +105,7 @@ internal fun FaceAuthContent(
 private fun AuthProgress.toUiState(): AuthUiState = when (this) {
     AuthProgress.SEARCHING -> AuthUiState.Searching
     AuthProgress.ALIGNING -> AuthUiState.Aligning
-    AuthProgress.AWAITING_ACTION -> AuthUiState.Aligning       // "고개 돌려주세요"
-    AuthProgress.ACTION_IN_PROGRESS -> AuthUiState.Action      // "원래대로"
+    AuthProgress.AWAITING_ACTION -> AuthUiState.Aligning
+    AuthProgress.ACTION_IN_PROGRESS -> AuthUiState.Action
 }
 
-private fun PassError.toMessage(): String = when (this) {
-    PassError.MaskDetected -> "마스크를 벗고 다시 시도해주세요"
-    PassError.MultipleFaces -> "한 명만 화면에 나와주세요"
-    PassError.CameraDenied -> "카메라 권한이 필요합니다"
-    PassError.ModelNotReady -> "잠시 후 다시 시도해주세요"
-    else -> "인증에 실패했습니다"
-}

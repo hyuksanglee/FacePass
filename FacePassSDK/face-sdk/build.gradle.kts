@@ -45,6 +45,10 @@ android {
             dimension = "sdkType"
         }
     }
+
+    androidResources {
+        noCompress += "tflite"
+    }
 }
 
 dependencies {
@@ -64,6 +68,8 @@ dependencies {
     implementation("com.google.mlkit:face-detection:16.1.7")
     androidTestImplementation(platform(libs.androidx.compose.bom))
     androidTestImplementation(libs.androidx.compose.ui.test.junit4)
+
+    implementation("org.tensorflow:tensorflow-lite:2.16.1")
 
 
     val composeBom = platform(libs.androidx.compose.bom)

@@ -47,7 +47,7 @@ internal data class AuthUiState(
         )
 
         fun fail(message: String) = AuthUiState(
-            progress = 0f,
+            progress = 1f,
             ringColor = FaceAuthColors.Fail,
             instruction = message,
             statusText = "인증 실패",
